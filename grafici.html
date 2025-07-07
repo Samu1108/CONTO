@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Statistiche Conto Personale</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0 20px;
+      background: #f9f9f9;
+      color: #212529;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    canvas {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin: 20px auto;
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Statistiche Conto Personale</h1>
+  <h2>Entrate vs Uscite</h2>
+  <canvas id="graficoTorta" width="400" height="400"></canvas>
+
+  <h2>Saldo nel tempo</h2>
+  <canvas id="graficoLinea" width="700" height="400"></canvas>
+
+  <script>
+    async function caricaDatiGrafici() {
+      try {
+        const res = await fetch('/api/transazioni');
+        if (!res.ok) throw new Error('Errore caricamento dati grafici');
+        const data = await res.json();
+
+        creaGraficoTorta(data);
+        creaGraficoLinea(data);
+      } catch (e) {
+        console.error('Errore nei grafici:', e);
+        alert('Impossibile caricare i dati per i grafici.');
+      }
+    }
+
+    function creaGraficoTorta(transazioni) {
+      const entrate = transazioni
+        .filter(t => t.tipo === 'entrata')
+        .reduce((acc, t) => acc + t.importo, 0);
+
+      const uscite = transazioni
+        .filter(t => t.tipo === 'uscita')
+        .reduce((acc, t) => acc + t.importo, 0);
+
+      const ctx = document.getElementById('graficoTorta').getContext('2d');
+      new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Entrate', 'Uscite'],
+          datasets: [{
+            data: [entrate, uscite],
+            backgroundColor: ['#28a745', '#dc3545'],
+            borderWidth: 1,
+          }]
+        },
+        options: {
+          responsive: true,
+          animation: { animateRotate: true, duration: 1000 },
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+    }
+
+    function creaGraficoLinea(transazioni) {
+      // Ordina per data ascendente
+      transazioni.sort((a, b) => new Date(a.data) - new Date(b.data));
+
+      const date = [];
+      const saldoGiorni = [];
+      let saldo = 0;
+      let ultimoGiorno = null;
+
+      transazioni.forEach(t => {
+        if (t.data !== ultimoGiorno) {
+          // Se cambio giorno, salvo il saldo corrente al giorno precedente
+          if (ultimoGiorno !== null) {
+            date.push(ultimoGiorno);
+            saldoGiorni.push(saldo);
+          }
+          ultimoGiorno = t.data;
+        }
+        saldo += (t.tipo === 'entrata' ? t.importo : -t.importo);
+      });
+
+      // Aggiungo l'ultimo giorno e saldo
+      if (ultimoGiorno !== null) {
+        date.push(ultimoGiorno);
+        saldoGiorni.push(saldo);
+      }
+
+      const ctx = document.getElementById('graficoLinea').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: date,
+          datasets: [{
+            label: 'Saldo (€)',
+            data: saldoGiorni,
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0,123,255,0.3)',
+            fill: true,
+            tension: 0.2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          animation: { duration: 1000 },
+          scales: {
+            x: {
+              title: { display: true, text: 'Data' },
+              ticks: { maxRotation: 45, minRotation: 45 }
+            },
+            y: {
+              title: { display: true, text: 'Saldo (€)' },
+              beginAtZero: true
+            }
+          },
+          plugins: {
+            legend: { display: true },
+            tooltip: { enabled: true }
+          }
+        }
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', caricaDatiGrafici);
+  </script>
+</body>
+</html>

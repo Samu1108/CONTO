@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Conto NEXT</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    ul#lista {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+
+    ul#lista li.entrata {
+      color: green;
+    }
+
+    ul#lista li.uscita {
+      color: red;
+    }
+
+    #exitBtn {
+      background-color: red;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="navbar">
+      <a href="index.html" class="active">➕ Inserisci</a>
+      <a href="conto.html">📄 Conto</a>
+      <a href="stats.html">📊 Statistiche</a>
+    </nav>
+
+    <header>
+      <h1>Conto personale di Samuele Sartori</h1>
+    </header>
+
+    <div class="form-group">
+      <label for="descrizione">Descrizione:</label>
+      <input type="text" id="descrizione" list="descrizioni" placeholder="Seleziona o scrivi..." />
+      <datalist id="descrizioni">
+        <option value="Magia">
+        <option value="Girapale">
+        <option value="Bibelot">
+        <option value="Bar">
+        <option value="Interesse scientifico (es. calc. grafica)">
+        <option value="Altro...">
+      </datalist>
+    </div>
+
+    <div class="form-group">
+      <label for="importo">Importo:</label>
+      <input type="number" id="importo" min="0" step="0.01" />
+    </div>
+
+    <div class="form-group">
+      <label for="tipo">Tipo:</label>
+      <select id="tipo">
+        <option value="entrata">Entrata</option>
+        <option value="uscita">Uscita</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="data">Data:</label>
+      <input type="date" id="data" />
+    </div>
+
+    <div class="form-actions">
+      <button onclick="aggiungiTransazione()">Aggiungi</button>
+      <button onclick="resetCampi()">Reset</button>
+      <button onclick="scaricaBackup()">Scarica Backup</button>
+      <button id="exitBtn">Exit</button>
+    </div>
+
+    <div id="saldoContainer">
+      <strong>Saldo:</strong> <span id="saldo">0€</span>
+    </div>
+
+  </div>
+
+  <script>
+    // Redirect se non loggato
+    if (sessionStorage.getItem("loggedIn") !== "true") {
+      window.location.href = "login.html";
+    }
+
+    // Bottone Exit: rimuove login e va a login.html subito
+    const exitBtn = document.getElementById('exitBtn');
+    exitBtn.addEventListener('click', () => {
+      sessionStorage.removeItem("loggedIn");
+      window.location.href = "login.html";
+    });
+
+    // Funzioni placeholder, da implementare o importare da app.js
+    function aggiungiTransazione() {
+      alert('Funzione aggiungiTransazione() da implementare.');
+    }
+    function resetCampi() {
+      alert('Funzione resetCampi() da implementare.');
+    }
+    function scaricaBackup() {
+      alert('Funzione scaricaBackup() da implementare.');
+    }
+
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login Conto NEXT</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <form id="login-form" onsubmit="login(event)">
+    <h2>Login</h2>
+    <input type="text" id="username" placeholder="Nome utente" autocomplete="username" />
+    <input type="password" id="password" placeholder="Password" autocomplete="current-password" />
+    <button type="submit">Accedi</button>
+    <a href="#" id="forgot-password"><a href="password_dimenticata.html" id="forgot-password">Password dimenticata?</a>
+</a>
+  </form>
+
+  <script>
+    function login(event) {
+      event.preventDefault();  // evita refresh pagina
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (username && password) {
+        sessionStorage.setItem("loggedIn", "true");
+        window.location.href = "index.html";
+      } else {
+        alert("Inserisci nome utente e password");
+      }
+    }
+  </script>
+</body>
+</html>

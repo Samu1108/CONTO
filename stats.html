@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Conto NEXT</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Un po' di stile per i grafici */
+    .chart-container {
+      max-width: 700px;
+      margin: 30px auto;
+      background: var(--card);
+      padding: 20px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+    }
+    h2 {
+      text-align: center;
+      color: var(--primary);
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="navbar">
+      <a href="index.html">➕ Inserisci</a>
+      <a href="conto.html">📄 Conto</a>
+      <a href="stats.html" class="active">📊 Statistiche</a>
+    </nav>
+
+    <h1>Statistiche</h1>
+
+    <div class="chart-container">
+      <h2>Entrate vs Uscite</h2>
+      <canvas id="pieChart" aria-label="Grafico a torta entrate e uscite" role="img"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <h2>Saldo nel tempo</h2>
+      <canvas id="lineChart" aria-label="Grafico lineare saldo nel tempo" role="img"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    async function fetchTransazioni() {
+      const res = await fetch('/api/transazioni');
+      if (!res.ok) {
+        alert('Errore caricamento dati');
+        return [];
+      }
+      return await res.json();
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString();
+    }
+
+    function groupByDate(transazioni) {
+      // Raggruppa transazioni per data (yyyy-mm-dd)
+      return transazioni.reduce((acc, t) => {
+        acc[t.data] = acc[t.data] || [];
+        acc[t.data].push(t);
+        return acc;
+      }, {});
+    }
+
+    async function creaGrafici() {
+      const transazioni = await fetchTransazioni();
+      if (transazioni.length === 0) return;
+
+      // Calcola totale entrate e uscite per torta
+      let totaleEntrate = 0;
+      let totaleUscite = 0;
+      transazioni.forEach(t => {
+        if (t.tipo === 'entrata') totaleEntrate += t.importo;
+        else totaleUscite += t.importo;
+      });
+
+      // Pie chart entrate vs uscite
+      const pieCtx = document.getElementById('pieChart').getContext('2d');
+      new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+          labels: ['Entrate', 'Uscite'],
+          datasets: [{
+            data: [totaleEntrate, totaleUscite],
+            backgroundColor: ['#28a745', '#dc3545'],
+            borderColor: '#fff',
+            borderWidth: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { font: { size: 16 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: context => `${context.label}: €${context.parsed.toFixed(2)}`
+              }
+            }
+          }
+        }
+      });
+
+      // Grafico lineare saldo nel tempo
+      // Ordina transazioni per data crescente
+      transazioni.sort((a,b) => new Date(a.data) - new Date(b.data));
+
+      // Raggruppa per data
+      const gruppi = groupByDate(transazioni);
+      const dateOrdinate = Object.keys(gruppi).sort((a,b) => new Date(a) - new Date(b));
+
+      // Calcola saldo cumulativo per ogni data
+      let saldo = 0;
+      const saldoGiorni = dateOrdinate.map(data => {
+        const movimenti = gruppi[data];
+        movimenti.forEach(t => {
+          saldo += (t.tipo === 'entrata' ? t.importo : -t.importo);
+        });
+        return { data, saldo: saldo };
+      });
+
+      const lineCtx = document.getElementById('lineChart').getContext('2d');
+      new Chart(lineCtx, {
+        type: 'line',
+        data: {
+          labels: saldoGiorni.map(d => formatDate(d.data)),
+          datasets: [{
+            label: 'Saldo (€)',
+            data: saldoGiorni.map(d => d.saldo.toFixed(2)),
+            borderColor: 'var(--primary)',
+            backgroundColor: 'rgba(0, 87, 163, 0.3)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: false,
+              ticks: {
+                callback: val => val + '€'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Data'
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              labels: { font: { size: 14 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => `Saldo: €${ctx.parsed.y}`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    creaGrafici();
+  </script>
+</body>
+</html>
