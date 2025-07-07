@@ -1,0 +1,38 @@
+[
+  {
+    "descrizione": "Regalo di nonna per la promozione con 8.08 e crediti da 9! (grazie nonna)",
+    "importo": 100,
+    "tipo": "entrata",
+    "data": "16-06-2025"
+  },
+  {
+    "descrizione": "Bar (7,5 euro, uno dato a Gioele fuori da cassa.)",
+    "importo": 0,
+    "tipo": "uscita",
+    "data": "2025-06-16"
+  },
+  {
+    "descrizione": "Regalo da parte diTOM-STEPH per aver usato la barca per il loro matrimonio, molto gentili.",
+    "importo": 50,
+    "tipo": "entrata",
+    "data": "2025-06-23"
+  },
+  {
+    "descrizione": "9 birre per festeggiare brevetto parapendio + 1 pacchetto di patatine.",
+    "importo": 11.63,
+    "tipo": "uscita",
+    "data": "2025-06-23"
+  },
+  {
+    "descrizione": "Palline ping-pong",
+    "importo": 3.5,
+    "tipo": "uscita",
+    "data": "2025-06-25"
+  },
+  {
+    "descrizione": "Arrotondamento moneta da anno scorso.",
+    "importo": 26.72,
+    "tipo": "entrata",
+    "data": "2025-06-25"
+  }
+]
