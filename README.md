@@ -35,7 +35,7 @@ Modifica
 /server       - Backend server code (API + auth)
 /client       - Frontend with forms and UI components
   /forms
-    login.js
+    login.js NB, the password and admin in order to acces are: admin: 1234, password:password.
     insert.js
     account.js
     stats.js
