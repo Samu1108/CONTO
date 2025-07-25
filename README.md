@@ -1,5 +1,4 @@
-
-💰 Bank App (Personal Finance Tracker)
+#💰 Bank App (Personal Finance Tracker)
 This is a simple web-based personal banking app built with HTML, CSS, JavaScript, and Firebase. It allows users to:
 
 ➕ Add income and expenses
