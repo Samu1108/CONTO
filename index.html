@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Next Bank - Add</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="navbar">
+      <a href="index.html" class="active">➕ Add</a>
+      <a href="conto.html">📄 Account</a>
+      <a href="stats.html">📊 Stats</a>
+    </nav>
+
+    <header>
+      <h1>Samuele Sartori's Personal Account</h1>
+    </header>
+
+    <div class="form-group">
+      <label for="descrizione">Description:</label>
+      <input type="text" id="descrizione" list="descrizioni" placeholder="Choose or type..." />
+      <datalist id="descrizioni">
+        <option value="Magic">
+        <option value="Girapale">
+        <option value="Bibelot">
+        <option value="Bar">
+        <option value="Scientific Interest (e.g. calculator, graphics)">
+        <option value="Other...">
+      </datalist>
+    </div>
+
+    <div class="form-group">
+      <label for="importo">Amount:</label>
+      <input type="number" id="importo" min="0" step="0.01" />
+    </div>
+
+    <div class="form-group">
+      <label for="tipo">Type:</label>
+      <select id="tipo">
+        <option value="entrata">Income</option>
+        <option value="uscita">Expense</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="data">Date:</label>
+      <input type="date" id="data" />
+    </div>
+
+    <div class="form-actions">
+      <button id="addBtn">Add</button>
+      <button id="resetBtn">Reset</button>
+      <button id="backupBtn">Download Backup</button>
+    </div>
+
+    <div id="saldoContainer">
+      <strong>Balance:</strong> <span id="saldo">0€</span>
+    </div>
+
+    <ul id="lista"></ul>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, getDocs, query, orderBy
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    // Config Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDinILt34rBHAk6c3cd_U2MhzX9g5Uk630",
+      authDomain: "account-bank-d259c.firebaseapp.com",
+      projectId: "account-bank-d259c",
+      storageBucket: "account-bank-d259c.firebasestorage.app",
+      messagingSenderId: "445708368305",
+      appId: "1:445708368305:web:5c52e70b971b8422ef2590",
+      measurementId: "G-N1SM58HQ9Y"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const descrizioneInput = document.getElementById("descrizione");
+    const importoInput = document.getElementById("importo");
+    const tipoInput = document.getElementById("tipo");
+    const dataInput = document.getElementById("data");
+    const saldoSpan = document.getElementById("saldo");
+
+    // Set today date by default
+    function getToday() {
+      const today = new Date();
+      today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+      return today.toISOString().split("T")[0];
+    }
+
+    dataInput.value = getToday();
+
+    // Funzione per caricare il saldo attuale
+    async function loadBalance() {
+      let saldo = 0;
+      const q = query(collection(db, "transazioni"), orderBy("data", "asc"));
+      const snapshot = await getDocs(q);
+      snapshot.forEach(doc => {
+        const t = doc.data();
+        saldo += t.tipo === "entrata" ? t.importo : -t.importo;
+      });
+      saldoSpan.textContent = saldo.toFixed(2) + "€";
+    }
+
+    // Aggiungi transazione al DB
+    async function aggiungiTransazione() {
+      const descrizione = descrizioneInput.value.trim();
+      const importo = parseFloat(importoInput.value);
+      const tipo = tipoInput.value;
+      const data = dataInput.value;
+
+      if (!descrizione || isNaN(importo) || !data) {
+        alert("Please fill all fields correctly!");
+        return;
+      }
+
+      await addDoc(collection(db, "transazioni"), {
+        descrizione,
+        importo,
+        tipo,
+        data
+      });
+
+      alert("Transaction added!");
+      resetFields();
+      loadBalance();
+    }
+
+    function resetFields() {
+      descrizioneInput.value = "";
+      importoInput.value = "";
+      tipoInput.value = "entrata";
+      dataInput.value = getToday();
+    }
+
+    // Scarica backup JSON
+    async function downloadBackup() {
+      const q = query(collection(db, "transazioni"), orderBy("data", "asc"));
+      const snapshot = await getDocs(q);
+      const dati = snapshot.docs.map(doc => doc.data());
+      const blob = new Blob([JSON.stringify(dati, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "transazioni_backup.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById("addBtn").addEventListener("click", aggiungiTransazione);
+    document.getElementById("resetBtn").addEventListener("click", resetFields);
+    document.getElementById("backupBtn").addEventListener("click", downloadBackup);
+
+    // Carica saldo all'avvio
+    loadBalance();
+
+  </script>
+</body>
+</html>

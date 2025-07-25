@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NEXT Account - stats</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .chart-container {
+      max-width: 700px;
+      margin: 30px auto;
+      background: var(--card);
+      padding: 20px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+    }
+    h2 {
+      text-align: center;
+      color: var(--primary);
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="navbar">
+      <a href="index.html">➕ Insert</a>
+      <a href="conto.html">📄 Account</a>
+      <a href="stats.html" class="active">📊 Stats</a>
+    </nav>
+
+    <h1>Stats</h1>
+
+    <div class="chart-container">
+      <h2>Gains vs losses</h2>
+      <canvas id="pieChart" aria-label="Grafico a torta entrate e uscite" role="img"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <h2>Balance vs time</h2>
+      <canvas id="lineChart" aria-label="Grafico lineare saldo nel tempo" role="img"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Firebase + logica -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    // ✅ Config Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDinILt34rBHAk6c3cd_U2MhzX9g5Uk630",
+    authDomain: "account-bank-d259c.firebaseapp.com",
+    projectId: "account-bank-d259c",
+    storageBucket: "account-bank-d259c.firebasestorage.app",
+    messagingSenderId: "445708368305",
+    appId: "1:445708368305:web:5c52e70b971b8422ef2590",
+    measurementId: "G-N1SM58HQ9Y"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ✅ Recupera transazioni da Firestore
+    async function fetchTransazioni() {
+      const q = query(collection(db, "transazioni"), orderBy("data", "asc"));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => doc.data());
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString("it-IT");
+    }
+
+    function groupByDate(transazioni) {
+      return transazioni.reduce((acc, t) => {
+        acc[t.data] = acc[t.data] || [];
+        acc[t.data].push(t);
+        return acc;
+      }, {});
+    }
+
+    async function creaGrafici() {
+      const transazioni = await fetchTransazioni();
+      if (transazioni.length === 0) return;
+
+      // Totali per grafico a torta
+      let totaleEntrate = 0;
+      let totaleUscite = 0;
+      transazioni.forEach(t => {
+        if (t.tipo === "entrata") totaleEntrate += t.importo;
+        else totaleUscite += t.importo;
+      });
+
+      // ✅ Pie chart Entrate vs Uscite
+      const pieCtx = document.getElementById("pieChart").getContext("2d");
+      new Chart(pieCtx, {
+        type: "pie",
+        data: {
+          labels: ["Entrate", "Uscite"],
+          datasets: [{
+            data: [totaleEntrate, totaleUscite],
+            backgroundColor: ["#28a745", "#dc3545"],
+            borderColor: "#fff",
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { font: { size: 16 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.label}: €${ctx.parsed.toFixed(2)}`
+              }
+            }
+          }
+        }
+      });
+
+      // ✅ Grafico lineare saldo nel tempo
+      transazioni.sort((a, b) => new Date(a.data) - new Date(b.data));
+      const gruppi = groupByDate(transazioni);
+      const dateOrdinate = Object.keys(gruppi).sort((a, b) => new Date(a) - new Date(b));
+
+      let saldo = 0;
+      const saldoGiorni = dateOrdinate.map(data => {
+        const movimenti = gruppi[data];
+        movimenti.forEach(t => {
+          saldo += (t.tipo === "entrata" ? t.importo : -t.importo);
+        });
+        return { data, saldo: saldo };
+      });
+
+      const lineCtx = document.getElementById("lineChart").getContext("2d");
+      new Chart(lineCtx, {
+        type: "line",
+        data: {
+          labels: saldoGiorni.map(d => formatDate(d.data)),
+          datasets: [{
+            label: "Saldo (€)",
+            data: saldoGiorni.map(d => d.saldo.toFixed(2)),
+            borderColor: "#0057a3",
+            backgroundColor: "rgba(0, 87, 163, 0.2)",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: false,
+              ticks: {
+                callback: val => val + "€"
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: "Data"
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              labels: { font: { size: 14 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => `Saldo: €${ctx.parsed.y}`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    creaGrafici();
+  </script>
+</body>
+</html>

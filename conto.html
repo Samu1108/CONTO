@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Next Account - Transactions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <nav class="navbar">
+      <a href="index.html">➕ Add</a>
+      <a href="conto.html" class="active">📄 Account</a>
+      <a href="stats.html">📊 Stats</a>
+    </nav>
+
+    <h1>Transactions</h1>
+    <div id="saldoContainer">
+      Balance: <span id="saldo">0.00€</span>
+    </div>
+    <ul id="lista"></ul>
+    <button id="mostraAltroBtn">⬇ See other transactions</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getFirestore, collection, getDocs, query, orderBy, limit, startAfter
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    // Config Firebase (stesso config)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDinILt34rBHAk6c3cd_U2MhzX9g5Uk630",
+      authDomain: "account-bank-d259c.firebaseapp.com",
+      projectId: "account-bank-d259c",
+      storageBucket: "account-bank-d259c.firebasestorage.app",
+      messagingSenderId: "445708368305",
+      appId: "1:445708368305:web:5c52e70b971b8422ef2590",
+      measurementId: "G-N1SM58HQ9Y"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const lista = document.getElementById("lista");
+    const saldoSpan = document.getElementById("saldo");
+    const mostraAltroBtn = document.getElementById("mostraAltroBtn");
+
+    let ultimoDocumento = null;
+    const BATCH_SIZE = 5;
+
+    // Carica saldo totale
+    async function mostraSaldo() {
+      let saldo = 0;
+      const q = query(collection(db, "transazioni"), orderBy("data", "asc"));
+      const snapshot = await getDocs(q);
+      snapshot.forEach(doc => {
+        const t = doc.data();
+        saldo += t.tipo === "entrata" ? t.importo : -t.importo;
+      });
+      saldoSpan.textContent = saldo.toFixed(2) + "€";
+    }
+
+    // Carica batch di transazioni (paginazione)
+    async function caricaTransazioni() {
+      let q;
+      if (ultimoDocumento) {
+        q = query(collection(db, "transazioni"), orderBy("data", "desc"), startAfter(ultimoDocumento), limit(BATCH_SIZE));
+      } else {
+        q = query(collection(db, "transazioni"), orderBy("data", "desc"), limit(BATCH_SIZE));
+      }
+
+      const snapshot = await getDocs(q);
+
+      if (snapshot.docs.length === 0) {
+        mostraAltroBtn.disabled = true;
+        mostraAltroBtn.textContent = "No more transactions";
+        return;
+      }
+
+      snapshot.forEach(doc => {
+        const t = doc.data();
+        const li = document.createElement("li");
+        li.className = t.tipo === "entrata" ? "entrata" : "uscita";
+        li.textContent = `${t.data} - ${t.descrizione}: ${t.importo.toFixed(2)}€`;
+        lista.appendChild(li);
+      });
+
+      ultimoDocumento = snapshot.docs[snapshot.docs.length - 1];
+    }
+
+    mostraAltroBtn.addEventListener("click", caricaTransazioni);
+
+    // All'avvio
+    mostraSaldo();
+    caricaTransazioni();
+  </script>
+</body>
+</html>
